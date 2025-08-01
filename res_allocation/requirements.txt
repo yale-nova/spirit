@@ -1,0 +1,13 @@
+scikit-learn
+tqdm
+plotly
+redis
+requests
+xgboost
+prettytable
+reportlab
+scipy
+pygam
+pandas
+matplotlib
+seaborn

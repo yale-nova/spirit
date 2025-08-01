@@ -1,0 +1,13 @@
+# obj and cmd for kernel module
+*.o.cmd
+*.o.d
+*.ko.cmd
+*.mod.cmd
+*.mod.c
+*.o
+*.mod
+*.ko
+Module.symvers
+.Module.symvers.cmd
+modules.order
+.modules.order.cmd

@@ -1,0 +1,14 @@
+[lib]
+name = "trace_loader"
+crate-type = ["rlib"]
+
+[package]
+name = "trace_loader"
+version.workspace = true
+edition.workspace = true
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libc = "0.2"

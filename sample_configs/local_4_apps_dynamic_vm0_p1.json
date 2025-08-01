@@ -1,0 +1,47 @@
+{
+  "id_preload_map": [
+    {
+      "id": 1,
+      "script": "local-enforcer/scripts/run_dynamic_docker.sh",
+      "docker_name": "spirit_dynamic_1",
+      "port": 61001,
+      "launch": false
+    },
+    {
+      "id": 2,
+      "script": "local-enforcer/scripts/run_dynamic_docker.sh",
+      "docker_name": "spirit_dynamic_2",
+      "port": 61002,
+      "launch": false
+    },
+    {
+      "id": 3,
+      "script": "local-enforcer/scripts/run_dynamic_docker.sh",
+      "docker_name": "spirit_dynamic_3",
+      "port": 61003,
+      "launch": false
+    },
+    {
+      "id": 4,
+      "script": "local-enforcer/scripts/run_dynamic_docker.sh",
+      "docker_name": "spirit_dynamic_4",
+      "port": 61004,
+      "launch": false
+    }
+  ],
+  "id_benchmark_map": {
+    "1": "",
+    "2": "",
+    "3": "",
+    "4": ""
+  },
+  "config_path": {
+    "1": "sample_configs/meta_kvs_dyn1"
+  },
+  "log_collect": [
+  ],
+  "memory_dev_name": "/dev/mind_ram0",
+  "memory_ip": "10.10.10.221",
+  "global_ip": "10.10.10.221:8001",
+  "enable_mrc": true
+}

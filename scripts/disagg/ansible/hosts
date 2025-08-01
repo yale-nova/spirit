@@ -1,0 +1,2 @@
+[servers]
+10.10.10.201 ansible_user=sslee_cs

@@ -1,0 +1,78 @@
+{
+    "cluster":
+    {
+        "name": "mindv2",
+        "total_cache_in_mb": 20480,
+        "total_mem_bw_in_mbps": 7680,
+        "min_cache_in_mb": 1280,
+        "min_mem_bw_in_mbps": 896,
+        "max_mem_bw_in_mbps": 1474,
+        "num_vms": 4
+    },
+    "profiles":
+    [
+        {"user_id": 1, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+        {"user_id": 2, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 3, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 4, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 5, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+        {"user_id": 6, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+
+        {"user_id": 7, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+        {"user_id": 8, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 9, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 10, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 11, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+        {"user_id": 12, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+
+        {"user_id": 13, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+        {"user_id": 14, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 15, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 16, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 17, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+        {"user_id": 18, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+
+        {"user_id": 19, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+        {"user_id": 20, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 21, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 22, "file": "dummy.joblib", "sensitivity": "cache"},
+        {"user_id": 23, "file": "dummy.joblib", "sensitivity": "mem_bw"},
+        {"user_id": 24, "file": "dummy.joblib", "sensitivity": "mem_bw"}
+    ],
+    "resource_controller": 
+    {
+        "base_url": "http://localhost:8000",
+        "deploy_route": "/config",
+        "collect_route": "/status"
+    },
+    "benchmark_map": {
+        "1": "Note) THIS benchmark_map is dummy now; only number of entries matters",
+        "2": "Also, sensitivity in profiles does not matter other than oracle allocation",
+        "3": "min resource allocation is 1/2 of the static allocation",
+        "4": "None",
+        "5": "None",
+        "6": "None",
+        "7": "None",
+        "8": "None",
+        "9": "None",
+        "10": "None",
+        "11": "None",
+        "12": "None",
+        "13": "None",
+        "14": "None",
+        "15": "None",
+        "16": "None",
+        "17": "None",
+        "18": "None",
+        "19": "None",
+        "20": "None",
+        "21": "None",
+        "22": "None",
+        "23": "None",
+        "24": "None"
+    },
+    "allocation_parameters":
+    {
+        "allocation_interval_in_sec": 10
+    }
+}

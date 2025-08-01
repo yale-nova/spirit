@@ -1,0 +1,42 @@
+/target
+
+logs
+
+.env
+.venv
+
+# Mac OS
+.DS_Store
+
+# VSCode workspace
+*.code-workspace
+.vscode
+get-docker.sh
+*.db
+*.db.old
+*.log
+logs
+
+# perf tool
+perf.data*
+
+# persistent data file for hashmap
+*.data
+
+# persistent data file for redis
+*.rdb
+
+#python
+venv
+myenv
+
+# graphs
+*.png
+*.zip
+hiredis-master
+.cargo_docker_cache
+*.pcap
+*.old
+
+# jupyter notebook
+.ipynb_checkpoints/

@@ -1,0 +1,32 @@
+{
+    "metric_server":
+    {
+        "server_ip": "172.28.229.152",
+        "server_port": 61001,
+        "db_name_in_index": 0
+    },
+    "cluster":
+    {
+        "name": "mind_cluster",
+        "total_cache_in_mb": 1024,
+        "total_mem_bw_in_mbps": 10240,
+        "min_cache_in_mb": 256,
+        "min_mem_bw_in_mbps": 2560
+    },
+    "profiles":
+    [
+        {"user_id": 2, "file": "logs_rocks_zipf_l3miss_gaussian_process_model.joblib", "sensitivity": "cache", "clip_iteration": 5},
+        {"user_id": 3, "file": "logs_streambench_l3miss_gaussian_process_model.joblib", "sensitivity": "mem_bw"}
+    ],
+    "users":
+    [
+        {"id": 1, "user_id": 2},
+        {"id": 2, "user_id": 3}
+    ],
+    "resource_controller": 
+    {
+        "base_url": "http://10.10.11.73:3000",
+        "deploy_route": "/put_allocation",
+        "collect_route": "/get_metric"
+    }
+}

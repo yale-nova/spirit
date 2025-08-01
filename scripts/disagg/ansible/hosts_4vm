@@ -1,0 +1,5 @@
+[servers]
+10.10.10.201 ansible_user=sslee_cs
+10.10.10.202 ansible_user=sslee_cs
+10.10.10.203 ansible_user=sslee_cs
+10.10.10.204 ansible_user=sslee_cs

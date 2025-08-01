@@ -1,0 +1,67 @@
+{
+  "vm_id": 3,
+  "id_preload_map": [
+    {
+      "id": 19,
+      "script": "local-enforcer/scripts/run_stream_docker.sh",
+      "docker_name": "spirit_stream_10",
+      "launch": true
+    },
+    {
+      "id": 20,
+      "script": "local-enforcer/scripts/run_memcached_kvs_docker.sh",
+      "docker_name": "spirit_memcached_4",
+      "port": 61002,
+      "launch": true
+    },
+    {
+      "id": 21,
+      "script": "local-enforcer/scripts/run_dlrm_inf_docker.sh",
+      "docker_name": "spirit_dlrm_inf_4",
+      "port": 8005,
+      "launch": true
+    },
+    {
+      "id": 22,
+      "script": "local-enforcer/scripts/reset_social_net.sh",
+      "docker_name": "spirit_social_net_4",
+      "launch": true,
+      "cgroup_map": "/sys/fs/cgroup/spirit.slice/spirit-snet.slice"
+    },
+    {
+      "id": 23,
+      "script": "local-enforcer/scripts/run_spark_docker.sh",
+      "docker_name": "spirit_spark_4",
+      "launch": true
+    },
+    {
+      "id": 24,
+      "script": "local-enforcer/scripts/run_stream_docker.sh",
+      "docker_name": "spirit_stream_12",
+      "launch": true
+    }
+  ],
+  "id_benchmark_map": {
+    "19": "",
+    "20": "",
+    "21": "",
+    "22": "",
+    "23": "",
+    "24": ""
+  },
+  "config_path": {
+    "20": "sample_configs/meta_kvs3"
+  },
+  "log_collect": [
+    "spirit_stream_10",
+    "spirit_spark_4",
+    "spirit_stream_12",
+    "spirit_dlrm_inf_4",
+    "spirit_mc_client_20",
+    "spirit_social_net_4_client"
+  ],
+  "memory_dev_name": "/dev/mind_ram0",
+  "memory_ip": "10.10.10.224",
+  "global_ip": "10.10.10.221:8001",
+  "enable_mrc": false
+}

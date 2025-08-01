@@ -1,0 +1,122 @@
+diff --git a/dlrm_s_pytorch.py b/dlrm_s_pytorch.py
+index c428940..b972c85 100644
+--- a/dlrm_s_pytorch.py
++++ b/dlrm_s_pytorch.py
+@@ -61,6 +61,10 @@ import datetime
+ import json
+ import sys
+ import time
++from threading import Thread
++import http.server
++import socketserver
++import json
+ 
+ # onnx
+ # The onnx import causes deprecation warnings every time workers
+@@ -120,6 +124,39 @@ with warnings.catch_warnings():
+ exc = getattr(builtins, "IOError", "FileNotFoundError")
+ 
+ 
++# Parameters for latency tracking
++NUM_BUCKETS = 1_000  # 1k -> 1 ms per bucket
++MAX_LATENCY = 1_000_000  # Define the maximum latency value (in us)
++LATENCY_US_PER_BUCKET = MAX_LATENCY // NUM_BUCKETS
++PORT = 8001
++
++# Initialize the latencies vector
++latencies = [0 for _ in range(NUM_BUCKETS)]
++class MetricsHandler(http.server.SimpleHTTPRequestHandler):
++    def do_GET(self):
++        if self.path == '/metric':
++            latency_copy = latencies[:]
++            total_latencies = sum(latency_copy)
++            cumulative_sum = 0
++            cdf = []
++            for i, count in enumerate(latency_copy):
++                cumulative_sum += count
++                cdf_proportion = round(cumulative_sum / total_latencies, 4) if total_latencies > 0 else 0
++                cdf.append([i * LATENCY_US_PER_BUCKET, cdf_proportion])
++            cdf_json = json.dumps({"cdf": {"2": cdf}, "num_records": {"2": total_latencies}})  # format of cdf, app_id (=2)
++            self.send_response(200)
++            self.send_header('Content-type', 'application/json')
++            self.end_headers()
++            self.wfile.write(cdf_json.encode('utf-8'))
++        else:
++            self.send_response(404)
++            self.end_headers()
++
++def start_webserver():
++    with socketserver.TCPServer(("", PORT), MetricsHandler) as httpd:
++        print(f"Serving metric at http://0.0.0.0:{PORT}/metric")
++        httpd.serve_forever()
++
+ def time_wrap(use_gpu):
+     if use_gpu:
+         torch.cuda.synchronize()
+@@ -758,7 +795,7 @@ def dash_separated_floats(value):
+ 
+     return value
+ 
+-
++inf_counter = 0
+ def inference(
+     args,
+     dlrm,
+@@ -771,16 +808,19 @@ def inference(
+ ):
+     test_accu = 0
+     test_samp = 0
++    global inf_counter
+ 
+     if args.mlperf_logging:
+         scores = []
+         targets = []
+ 
++    print("Start inference", flush=True)
+     for i, testBatch in enumerate(test_ld):
+         # early exit if nbatches was set by the user and was exceeded
+         if nbatches > 0 and i >= nbatches:
+             break
+ 
++        start_time = time.time()
+         X_test, lS_o_test, lS_i_test, T_test, W_test, CBPP_test = unpack_batch(
+             testBatch
+         )
+@@ -799,6 +839,15 @@ def inference(
+             device,
+             ndevices=ndevices,
+         )
++        end_time = time.time()
++        elapsed_time_us = (end_time - start_time) * 1_000_000
++        # Record the latency in the appropriate bucket
++        bucket_index = min(int(elapsed_time_us // LATENCY_US_PER_BUCKET), NUM_BUCKETS - 1)
++        latencies[bucket_index] += 1
++        inf_counter += 1
++        if inf_counter % 10 == 0:
++            print(f"Batch {inf_counter} inference time: {elapsed_time_us:.2f} us", flush=True)
++
+         ### gather the distributed results on each rank ###
+         # For some reason it requires explicit sync before all_gather call if
+         # tensor is on GPU memory
+@@ -1022,6 +1071,8 @@ def run():
+     parser.add_argument("--lr-num-warmup-steps", type=int, default=0)
+     parser.add_argument("--lr-decay-start-step", type=int, default=0)
+     parser.add_argument("--lr-num-decay-steps", type=int, default=0)
++    # Web server option for mtric
++    parser.add_argument("--web-metric-server", action="store_true", default=False)
+ 
+     global args
+     global nbatches
+@@ -1277,6 +1328,12 @@ def run():
+             print([S_i.detach().cpu() for S_i in lS_i])
+             print(T.detach().cpu())
+ 
++    if args.web_metric_server:
++        # Start the web server in a separate thread
++        webserver_thread = Thread(target=start_webserver)
++        webserver_thread.daemon = True
++        webserver_thread.start()
++
+     global ndevices
+     ndevices = min(ngpus, args.mini_batch_size, num_fea - 1) if use_gpu else -1
+ 

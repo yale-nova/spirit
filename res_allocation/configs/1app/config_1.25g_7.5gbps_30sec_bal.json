@@ -1,0 +1,28 @@
+{
+    "cluster":
+    {
+        "name": "mindv2",
+        "total_cache_in_mb": 1280,
+        "total_mem_bw_in_mbps": 7680,
+        "min_cache_in_mb": 1024,
+        "min_mem_bw_in_mbps": 1024,
+        "num_vms": 1
+    },
+    "profiles":
+    [
+        {"user_id": 2, "file": "dummy.joblib", "sensitivity": "cache"}
+    ],
+    "resource_controller": 
+    {
+        "base_url": "http://localhost:8000",
+        "deploy_route": "/config",
+        "collect_route": "/status"
+    },
+    "benchmark_map": {
+        "2": "Note) THIS benchmark_map and sensitivity in profiles are dummy"
+    },
+    "allocation_parameters":
+    {
+        "allocation_interval_in_sec": 30
+    }
+}

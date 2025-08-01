@@ -1,0 +1,15 @@
+{
+    "id_preload_map": {
+        "8": ""
+    },
+    "id_benchmark_map": {
+        "8": "/workload/meta_kvcache_traces_2.oracleGeneral.bin.zst"
+    },
+    "backend_ip_map": {
+    },
+    "global_ip": "10.10.10.221:8001",
+    "val_size_bytes": 10000,
+    "cache_ip": "127.0.0.1",
+    "bind_port": 61002,
+    "metric_port": 8002
+}

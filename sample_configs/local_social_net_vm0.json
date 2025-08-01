@@ -1,0 +1,21 @@
+{
+  "id_preload_map": [
+    {
+      "id": 2,
+      "script": "local-enforcer/scripts/reset_social_net.sh",
+      "docker_name": "spirit_social_net_1",
+      "launch": true,
+      "cgroup_map": "/sys/fs/cgroup/spirit.slice/spirit-snet.slice"
+    }
+  ],
+  "id_benchmark_map": {
+    "2": ""
+  },
+  "log_collect": [
+    "spirit_social_net_1_client"
+  ],
+  "memory_dev_name": "/dev/mind_ram0",
+  "memory_ip": "10.10.10.221",
+  "global_ip": "10.10.10.221:8001",
+  "enable_mrc": false
+}

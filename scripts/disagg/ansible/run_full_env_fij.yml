@@ -1,0 +1,249 @@
+- hosts: servers
+  vars:
+    # spirit_cache_limit_mb: "{{ spirit_cache_limit_mb }}"
+    # spirit_bw_limit_mbps: "{{ spirit_bw_limit_mbps }}"
+    # application_config: "{{ application_config }}"
+    res_alloc_config: "{{ res_alloc_config }}"
+    # Required for VM-specific configurations
+    local_config_prefix: "{{ local_config_prefix | default('sample_configs/local_config_vm') }}"
+    mind_script_dir: "/home/sslee/mind_next/scripts"
+    global_enforcer_port: 8000  # since it's inside container; outside the container, it should be 8001
+    # = times =
+    # spirit_timeout: 2000  # for dynamic profile
+    spirit_timeout: 1700  # 850
+    # spirit_timeout: 1100 # default: 15 sec x 100 iterations
+    # retries * delay = should be => timeout
+    spirit_retries: 10
+    spirit_delay: 170 # 85
+    # warmup and margin
+    spirit_wampup: 240
+    local_enforcer_warmup: 30
+    async_margin: 10
+
+  tasks:
+  # Build without sudo
+  - name: Build the local enforcer
+    ansible.builtin.command:
+      cmd: cargo build --release --manifest-path local-enforcer/Cargo.toml
+    become: no  # Run as the normal user
+    args:
+      chdir: /opt/spirit/spirit-controller
+    environment:
+      PATH: "/users/sslee_cs/.cargo/bin:{{ ansible_env.PATH }}"
+
+  # Remove any previous container and reset mind dev
+  - name: Get list of all Docker containers, stop and remove those with prefix 'spirit_'
+    ansible.builtin.command:
+      cmd: local-enforcer/scripts/terminate_spirit_containers.sh
+    args:
+      chdir: /opt/spirit/spirit-controller
+    become: yes
+
+  # Clean up the previous run
+  - name: Clean up the previous run (remote)
+    ansible.builtin.command:
+      cmd: local-enforcer/scripts/clean_up_enforcers.sh
+    args:
+      chdir: /opt/spirit/spirit-controller
+    become: yes
+
+  - name: Clean up the previous run (localhost)
+    ansible.builtin.command:
+      cmd: local-enforcer/scripts/clean_up_enforcers.sh
+    delegate_to: localhost
+    run_once: true
+    args:
+      chdir: /spirit-controller
+    become: yes
+
+  # Global enforcer
+  - name: Run the global enforcer
+    ansible.builtin.command:
+      cmd: local-enforcer/scripts/run_with_timeout.sh "{{ spirit_timeout + local_enforcer_warmup + spirit_wampup }}" just global-run "{{ global_enforcer_port }}" /config.json
+    delegate_to: localhost
+    run_once: true
+    args:
+        chdir: /spirit-controller
+    async: "{{ spirit_timeout + spirit_delay + local_enforcer_warmup + spirit_wampup + async_margin}}"  # Slightly longer than the script's timeout to ensure the script can complete its logic
+    poll: 0
+    register: async_global_enforcer
+
+  - name: Wait for global enforcer to start
+    pause:
+      seconds: 5
+
+  # Set host-specific local config based on inventory position
+  - name: Calculate VM ID based on inventory position
+    set_fact:
+      vm_number: "{{ groups['servers'].index(inventory_hostname) }}"
+
+  - name: Set local config based on VM ID
+    set_fact:
+      local_config: "{{ local_config_prefix }}{{ vm_number }}.json"
+
+  - name: Debug local config path
+    ansible.builtin.debug:
+      msg: "Using local configuration file: {{ local_config }} (Position in inventory: {{ vm_number }})"
+
+  - name: Run the local enforcer with a timeout script
+    ansible.builtin.command:
+       cmd: taskset -c 2-3 local-enforcer/scripts/run_with_timeout.sh "{{ spirit_timeout + local_enforcer_warmup + spirit_wampup }}" ./target/release/local-enforcer "{{ local_config }}"
+    args:
+      chdir: /opt/spirit/spirit-controller
+    become: yes
+    async: "{{ spirit_timeout + local_enforcer_warmup + spirit_wampup + async_margin }}"  # Slightly longer than the script's timeout to ensure the script can complete its logic
+    poll: 0
+    register: async_local_enforcer
+
+  # Wait for the local enforcer to start
+  - name: Wait for local enforcer to start
+    pause:
+      seconds: "{{ local_enforcer_warmup }}"
+
+  - name: Run the benchmark clients
+    shell: |
+        pwd
+        cd local-enforcer/scripts/
+        /opt/spirit/spirit-controller/myenv/bin/python run_clients.py "{{ local_config }}"
+    args:
+      executable: /bin/bash
+      chdir: /opt/spirit/spirit-controller/
+    register: client_launch_output
+
+  - name: Print output
+    ansible.builtin.debug:
+      var: client_launch_output.stdout_lines
+
+  # Pin cpus for the container having "spirit" as prefix
+  - name: Pin cpus
+    ansible.builtin.command:
+      cmd: local-enforcer/scripts/setup_cpus.sh
+    args:
+      chdir: /opt/spirit/spirit-controller
+    register: pin_cpus_output
+
+  - name: Print output
+    ansible.builtin.debug:
+      var: pin_cpus_output.stdout_lines
+
+  # Wait for warmup
+  - name: Warm up the application
+    ansible.builtin.wait_for:
+      timeout: "{{ async_margin }}"
+    become: no
+
+  # Start resource allocator
+  - name: Run resource allocator
+    ansible.builtin.command:
+      cmd: local-enforcer/scripts/run_with_timeout.sh "{{ spirit_timeout + spirit_wampup}}" /spirit-controller/local-enforcer/scripts/run_res_alloc_others.sh "{{ res_alloc_config }}" "fij-trade"
+    delegate_to: localhost
+    run_once: true
+    args:
+      chdir: /spirit-controller
+    async: "{{ spirit_timeout + spirit_wampup + async_margin}}"  # Slightly longer than the script's timeout to ensure the script can complete its logic
+    poll: 0
+    register: async_resource_allocator
+
+  # Wait for warmup
+  - name: Warm up the application
+    ansible.builtin.wait_for:
+      timeout: "{{ spirit_wampup }}"
+    become: no
+
+  # If we wait for this, everything should be done
+  - name: Wait for the asynchronous task to complete (global enforcer)
+    ansible.builtin.async_status:
+      jid: "{{ async_global_enforcer.ansible_job_id }}"
+    register: job_result
+    until: job_result.finished
+    retries: "{{ spirit_retries + 5 }}"  # Use the retries variable
+    delay: "{{ spirit_delay }}"  # Use the delay variable
+    delegate_to: localhost  # Run on the local machine
+    run_once: true
+    become: yes  # Use elevated privileges if required
+
+  # Collect all the logs of the containers based on the application config
+  - name: Collect logs
+    shell: |
+        pwd
+        cd local-enforcer/scripts/
+        /opt/spirit/spirit-controller/myenv/bin/python collect_cont_logs.py "{{ local_config }}"
+    args:
+      executable: /bin/bash
+      chdir: /opt/spirit/spirit-controller/
+    register: log_collect_output
+
+  - name: Print output
+    ansible.builtin.debug:
+      var: log_collect_output.stdout_lines
+  # Download the logs from "/tmp/spirit_logs/" into "/home/sslee/workspace/spirit-controller/res_allocation/logs"
+  - name: Install rsync
+    apt:
+      name: rsync
+      state: present
+    become: yes
+  - name: Install rsync on control node
+    apt:
+      name: rsync
+      state: present
+    delegate_to: localhost
+    run_once: true
+    become: yes
+
+  - name: Download logs (with retries)
+    synchronize:
+      src: /tmp/spirit_logs/
+      dest: /spirit-controller/res_allocation/logs/
+      mode: pull
+    register: sync_result
+    until: sync_result is success
+    retries: 3
+    delay: 5
+    ignore_errors: yes
+
+  # Collect metrics
+  - name: Collect metrics
+    delegate_to: localhost
+    run_once: true
+    block:
+      - name: Collect metrics from each server
+        uri:
+          url: "http://{{ hostvars[item]['ansible_host'] | default(item) }}:8009/metric"
+          method: GET
+          return_content: yes
+          status_code: 200
+        register: metrics_result
+        with_items: "{{ groups['servers'] }}"
+        loop_control:
+          index_var: vm_idx
+        ignore_errors: yes
+
+      - name: Save metrics to files
+        copy:
+          content: "{{ item.content | default('Error retrieving metrics') }}"
+          dest: "/spirit-controller/res_allocation/logs/spirit_social_net_{{ vm_idx }}_metrics.log"
+        loop: "{{ metrics_result.results }}"
+        loop_control:
+          loop_var: item
+          index_var: vm_idx
+        become: yes
+        when: metrics_result is defined
+
+  # Move all logs
+  - name : Moves all logs
+    # main_move_logs
+    ansible.builtin.command:
+      cmd: /spirit-controller/local-enforcer/scripts/run_res_alloc_move_logs.sh "{{ res_alloc_config }}" "fij-trade"
+    delegate_to: localhost
+    run_once: true
+    args:
+      chdir: /spirit-controller
+
+  # TODO: check asyncs are done
+  # Remove containers
+  - name: Get list of all Docker containers, stop and remove those with prefix 'spirit_'
+    ansible.builtin.command:
+      cmd: local-enforcer/scripts/terminate_spirit_containers.sh
+    args:
+      chdir: /opt/spirit/spirit-controller
+    become: yes

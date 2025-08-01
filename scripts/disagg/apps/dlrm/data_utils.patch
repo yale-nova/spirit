@@ -1,0 +1,30 @@
+--- a/data_utils.py
++++ b/data_utils.py
+@@ -1003,7 +1003,7 @@ def getCriteoAdData(
+                     if (line[j] == "") or (line[j] == "\n"):
+                         line[j] = "0"
+                 # sub-sample data by dropping zero targets, if needed
+-                target = np.int32(line[0])
++                target = np.int32(1)
+                 if (
+                     target == 0
+                     and (rand_u if sub_sample_rate == 0.0 else rand_u[k])
+@@ -1012,15 +1012,15 @@ def getCriteoAdData(
+                     continue
+ 
+                 y[i] = target
+-                X_int[i] = np.array(line[1:14], dtype=np.int32)
++                X_int[i] = np.array(line[:13], dtype=np.int32)
+                 if max_ind_range > 0:
+                     X_cat[i] = np.array(
+-                        list(map(lambda x: int(x, 16) % max_ind_range, line[14:])),
++                        list(map(lambda x: int(x, 16) % max_ind_range, line[13:])),
+                         dtype=np.int32,
+                     )
+                 else:
+                     X_cat[i] = np.array(
+-                        list(map(lambda x: int(x, 16), line[14:])), dtype=np.int32
++                        list(map(lambda x: int(x, 16), line[13:])), dtype=np.int32
+                     )
+ 
+                 # count uniques

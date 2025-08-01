@@ -1,0 +1,35 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out your code
+      - uses: actions/checkout@v3
+
+      # 2. Install libfontconfig-dev dependency
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libfontconfig-dev \
+            libglib2.0-dev \
+            pkg-config
+
+      # 3. Build your project
+      - name: Build
+        run: cargo build --verbose
+
+      # 4. Run tests
+      - name: Run tests
+        run: cargo test --verbose

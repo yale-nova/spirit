@@ -1,0 +1,96 @@
+
+setup_ansible:
+    sudo docker build -t ansible-docker ansible/.
+
+setup_dynamic:
+    @echo "** Manually run: cd apps && docker build -t dynamic-docker -f dynamic_docker/Dockerfile ."
+    exit -1
+
+run_ansible_docker_debug:
+    mkdir -p ../../logs
+    sudo docker run --rm -it --name ansible_docker_debug -v $(pwd)/ansible:/ansible \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -v "$HOME/Downloads/cachelib-workload/libcachesim:/workload:ro" \
+    -e ANSIBLE_HOST_KEY_CHECKING=False ansible-docker /bin/bash
+
+# here /data is the entry point of the cytopia ansible image
+run_ansible_docker_motiv CONFIG_FILE APP_CONFIG CACHE_MB BW_MBPS:
+    mkdir -p ../../logs
+    sudo docker run --rm -it -v $(pwd)/ansible:/ansible -v $(pwd)/{{CONFIG_FILE}}:/config.json -p 8001:8000 \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -e ANSIBLE_HOST_KEY_CHECKING=False ansible-docker ansible-playbook -i hosts run_local_enforcer.yml \
+    -e "spirit_cache_limit_mb={{CACHE_MB}} spirit_bw_limit_mbps={{BW_MBPS}}" \
+    -e "application_config={{APP_CONFIG}}"
+
+run_ansible_docker_motiv_snet_preload CONFIG_FILE APP_CONFIG CACHE_MB BW_MBPS:
+    mkdir -p ../../logs
+    sudo docker run --rm -it -v $(pwd)/ansible:/ansible -v $(pwd)/{{CONFIG_FILE}}:/config.json -p 8001:8000 \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -e ANSIBLE_HOST_KEY_CHECKING=False ansible-docker ansible-playbook -i hosts run_local_enforcer_snet_preload.yml \
+    -e "spirit_cache_limit_mb={{CACHE_MB}} spirit_bw_limit_mbps={{BW_MBPS}}" \
+    -e "application_config={{APP_CONFIG}}"
+
+run_ansible_docker_global CONFIG_FILE RES_CONFIG LOCAL_CONFIG_PREFIX:
+    mkdir -p ../../logs
+    sudo docker run --rm -it -v $(pwd)/ansible:/ansible -v $(pwd)/{{CONFIG_FILE}}:/config.json -p 8001:8000 \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -e ANSIBLE_HOST_KEY_CHECKING=False \
+    ansible-docker ansible-playbook -i hosts run_full_env.yml \
+    -e "res_alloc_config={{RES_CONFIG}}" \
+    -e "local_config_prefix={{LOCAL_CONFIG_PREFIX}}"
+# Example usage: just run_ansible_docker_global ../../sample_configs/global_2_apps.json sample_configs/local_rocksdb_ycsb.json configs/config_mindv2_1g.json
+
+run_ansible_docker_static CONFIG_FILE RES_CONFIG LOCAL_CONFIG_PREFIX:
+    mkdir -p ../../logs
+    sudo docker run --rm -it -v $(pwd)/ansible:/ansible -v $(pwd)/{{CONFIG_FILE}}:/config.json -p 8001:8000 \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -e ANSIBLE_HOST_KEY_CHECKING=False \
+    ansible-docker ansible-playbook -i hosts run_full_env_static.yml \
+    -e "res_alloc_config={{RES_CONFIG}}" \
+    -e "local_config_prefix={{LOCAL_CONFIG_PREFIX}}"
+
+run_ansible_docker_oracle CONFIG_FILE RES_CONFIG LOCAL_CONFIG_PREFIX:
+    mkdir -p ../../logs
+    sudo docker run --rm -it -v $(pwd)/ansible:/ansible -v $(pwd)/{{CONFIG_FILE}}:/config.json -p 8001:8000 \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -e ANSIBLE_HOST_KEY_CHECKING=False \
+    ansible-docker ansible-playbook -i hosts run_full_env_oracle.yml \
+    -e "res_alloc_config={{RES_CONFIG}}" \
+    -e "local_config_prefix={{LOCAL_CONFIG_PREFIX}}"
+
+run_ansible_docker_inc_trade CONFIG_FILE RES_CONFIG LOCAL_CONFIG_PREFIX:
+    mkdir -p ../../logs
+    sudo docker run --rm -it -v $(pwd)/ansible:/ansible -v $(pwd)/{{CONFIG_FILE}}:/config.json -p 8001:8000 \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -e ANSIBLE_HOST_KEY_CHECKING=False \
+    ansible-docker ansible-playbook -i hosts run_full_env_inc.yml \
+    -e "res_alloc_config={{RES_CONFIG}}" \
+    -e "local_config_prefix={{LOCAL_CONFIG_PREFIX}}"
+
+run_ansible_docker_fij_trade CONFIG_FILE RES_CONFIG LOCAL_CONFIG_PREFIX:
+    mkdir -p ../../logs
+    sudo docker run --rm -it -v $(pwd)/ansible:/ansible -v $(pwd)/{{CONFIG_FILE}}:/config.json -p 8001:8000 \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -e ANSIBLE_HOST_KEY_CHECKING=False \
+    ansible-docker ansible-playbook -i hosts run_full_env_fij.yml \
+    -e "res_alloc_config={{RES_CONFIG}}" \
+    -e "local_config_prefix={{LOCAL_CONFIG_PREFIX}}"
+
+run_ansible_docker_int_test CONFIG_FILE APP_CONFIG RES_CONFIG RES_INT:
+    mkdir -p ../../logs
+    sudo docker run --rm -it -v $(pwd)/ansible:/ansible -v $(pwd)/{{CONFIG_FILE}}:/config.json -p 8001:8000 \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -e ANSIBLE_HOST_KEY_CHECKING=False \
+    ansible-docker ansible-playbook -i hosts run_full_env_int.yml \
+    -e "application_config={{APP_CONFIG}}" \
+    -e "res_alloc_config={{RES_CONFIG}}" \
+    -e "res_alloc_interval={{RES_INT}}"
+
+run_ansible_docker_dynamic CONFIG_FILE RES_CONFIG LOCAL_CONFIG_PREFIX:
+    mkdir -p ../../logs
+    sudo docker run --rm -it -v $(pwd)/ansible:/ansible -v $(pwd)/{{CONFIG_FILE}}:/config.json -p 8001:8000 \
+    -v $HOME/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro -v $(pwd)/../../:/spirit-controller \
+    -e ANSIBLE_HOST_KEY_CHECKING=False \
+    ansible-docker ansible-playbook -i hosts run_dyn_env.yml \
+    -e "res_alloc_config={{RES_CONFIG}}" \
+    -e "local_config_prefix={{LOCAL_CONFIG_PREFIX}}"
