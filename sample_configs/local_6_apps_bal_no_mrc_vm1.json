@@ -30,8 +30,8 @@
     },
     {
       "id": 11,
-      "script": "local-enforcer/scripts/run_spark_docker.sh",
-      "docker_name": "spirit_spark_2",
+      "script": "local-enforcer/scripts/run_stream_docker.sh",
+      "docker_name": "spirit_stream_5",
       "launch": true
     },
     {
