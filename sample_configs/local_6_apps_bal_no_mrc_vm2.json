@@ -54,7 +54,7 @@
   },
   "log_collect": [
     "spirit_stream_7",
-    "spirit_spark_3",
+    "spirit_stream_8",
     "spirit_stream_9",
     "spirit_dlrm_inf_3",
     "spirit_mc_client_14",
