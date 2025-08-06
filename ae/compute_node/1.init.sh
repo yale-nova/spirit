@@ -7,6 +7,8 @@ git pull origin main
 git submodule init
 git submodule update
 
+sudo chown -R "$(whoami):$(id -gn)" "$SPIRIT_PATH"
+
 # cargo and others
 ./install.sh
 ./install_docker.sh || true
