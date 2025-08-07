@@ -28,7 +28,7 @@
     args:
       chdir: /opt/spirit/spirit-controller
     environment:
-      PATH: "/users/sslee_cs/.cargo/bin:{{ ansible_env.PATH }}"
+      PATH: "/users/{{ ansible_user_id }}/.cargo/bin:{{ ansible_env.PATH }}"
 
   # Remove any previous container and reset mind dev
   - name: Get list of all Docker containers, stop and remove those with prefix 'spirit_'
