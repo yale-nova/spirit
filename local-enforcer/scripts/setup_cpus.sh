@@ -41,9 +41,8 @@ echo "Found spirit containers: $CONTAINER_IDS"
 
 for CONTAINER_ID in $CONTAINER_IDS; do
     CONTAINER_NAME=$(docker ps --format '{{.Names}}' -f "id=$CONTAINER_ID")
-    
+
     if [[ "$CONTAINER_NAME" == *spirit_social_net* || "$CONTAINER_NAME" == *spirit_dlrm_inf_* ]]; then
-    # if [[ "$CONTAINER_NAME" == *spirit_socialnet* || "$CONTAINER_NAME" == *spirit_mc_client* ]]; then
         # Allocate spirit_socialnet and spirit_stream_ containers from second NUMA node
         CPUS_PER_CONTAINER=$DEFAULT_CPUS_PER_CONTAINER
         END_CPU=$((SECOND_NUMA_CPU + CPUS_PER_CONTAINER - 1))
@@ -57,22 +56,10 @@ for CONTAINER_ID in $CONTAINER_IDS; do
             assign_container "$CONTAINER_ID" "$CONTAINER_NAME" "$CPU_RANGE" "Assigned container from second NUMA for"
             SECOND_NUMA_CPU=$((END_CPU + 1))
         fi
-    # elif [[ "$CONTAINER_NAME" == *spirit_memcached* ]]; then
-    #     # Allocate double CPUs for spirit_memcached from the first NUMA node
-    #     CPUS_PER_CONTAINER=$((DEFAULT_CPUS_PER_CONTAINER * 2))
-    #     END_CPU=$((FIRST_NUMA_CPU + CPUS_PER_CONTAINER - 1))
-    #     CPU_RANGE="${FIRST_NUMA_CPU}-${END_CPU}"
-    #     assign_container "$CONTAINER_ID" "$CONTAINER_NAME" "$CPU_RANGE" "Assigned spirit_memcached container from first NUMA with double cpus"
-    #     FIRST_NUMA_CPU=$((END_CPU + 1))
     else
         # Set default CPU count first
         CPUS_PER_CONTAINER=$DEFAULT_CPUS_PER_CONTAINER
-        
-        # if [[ "$CONTAINER_NAME" == *spirit_spark_* ]]; then
-        #     # double the CPUs for spirit_spark containers
-        #     CPUS_PER_CONTAINER=$((DEFAULT_CPUS_PER_CONTAINER * 2))
-        # fi
-        
+
         # Allocate all other containers from first NUMA node
         END_CPU=$((FIRST_NUMA_CPU + CPUS_PER_CONTAINER - 1))
         CPU_RANGE="${FIRST_NUMA_CPU}-${END_CPU}"

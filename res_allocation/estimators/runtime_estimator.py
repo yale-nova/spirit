@@ -97,7 +97,6 @@ class RuntimeEstimator:
         - Estimated miss rate for the given cache size.
         """
         cache_size = float(cache_size)
-        # mrc_data = sorted(mrc_data, key=lambda x: x[0])
 
         # Separate the data into two lists for easier processing
         cache_sizes = [point[0] for point in mrc_data]

@@ -42,11 +42,6 @@
   - name: Wait for removing swap
     pause:
       seconds: 30
-
-  # - name: Cool down between runs
-  #   pause:
-  #     seconds: "{{ spirit_wampup }}"
-
   - name: Run 1a.setup_mind_swap_only.sh
     ansible.builtin.command:
       cmd: "{{ mind_script_dir }}/1a.setup_mind_swap_only.sh"
@@ -117,11 +112,6 @@
     ansible.builtin.debug:
       var: client_launch_output.stdout_lines
 
-  # Wait for warmup
-  # - name: Warm up the application
-  #   ansible.builtin.wait_for:
-  #     timeout: "{{ spirit_wampup }}"
-  #   become: no
   - name: Preload the application
     pause:
       seconds: "{{ spirit_preload }}"
@@ -184,7 +174,6 @@
       chdir: /spirit-controller
     delegate_to: localhost
 
-  # TODO: check asyncs are done
   # Remove containers
   - name: Get list of all Docker containers, stop and remove those with prefix 'spirit_'
     ansible.builtin.command:

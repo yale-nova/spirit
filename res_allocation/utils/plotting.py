@@ -24,9 +24,9 @@ def plot_3d_bar_with_color_based_on_z_avg(X_new, y_truth, file_name='tmp.html', 
     fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scatter3d'}]])
     fig.add_trace(
         go.Scatter3d(
-            x=X_new_avg[:, 0], 
-            y=X_new_avg[:, 1], 
-            z=y_truth_avg, 
+            x=X_new_avg[:, 0],
+            y=X_new_avg[:, 1],
+            z=y_truth_avg,
             mode='markers',
             marker=dict(
                 size=10,
@@ -74,17 +74,11 @@ def plot_3d_with_cache_bw_over_time_animation(data_over_time, file_name='tmp.htm
         y_truth_avg = [np.mean(data_dict[key]) for key in data_dict.keys()]
         y_truth_stddev_list = y_truth_stddev.tolist() if isinstance(y_truth_stddev, np.ndarray) else []
 
-        # for test set y_truth_avg at random index to 0
-        # set the random seed first
-        # np.random.seed(time.time_ns() % 2**32)
-        # rand_idx = np.random.randint(0, len(y_truth_avg))
-        # y_truth_avg[rand_idx] = 0
-
         # Create a Scatter3d trace for this state
         trace = go.Scatter3d(
-            x=X_new_avg[:, 0], 
-            y=X_new_avg[:, 1], 
-            z=y_truth_avg, 
+            x=X_new_avg[:, 0],
+            y=X_new_avg[:, 1],
+            z=y_truth_avg,
             mode='markers',
             marker=dict(
                 size=10,

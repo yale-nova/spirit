@@ -140,7 +140,6 @@ pub fn mbps_to_bytes_interval(mbps: BandwidthMbps) -> u64 {
 }
 
 // Utils for random string generation
-
 // Function to precompute a random string of given size
 pub fn precompute_random_string(size: usize) -> String {
     let mut rng = thread_rng();

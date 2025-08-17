@@ -299,29 +299,6 @@ static int is_buffer_full(struct fault_buffer *buffer, unsigned long size) {
     return size >= available_space ? 1 : 0;
 }
 
-// // ASSUMPTION: single producer, single consumer
-// // @return: offset to the buffer, -1 if failed
-// static unsigned long copy_data_to_buffer(struct fault_buffer *dst_buffer,
-// 					 void *data_dst_ptr, unsigned long size)
-// {
-//     unsigned long offset = dst_buffer->head;
-//     if (is_buffer_full(dst_buffer, size)) {
-//         return -1;
-//     }
-// 	if (size < BUFFER_SIZE - offset) {
-// 		memcpy(&dst_buffer->data_buf[offset], data_dst_ptr, size);
-// 	} else {
-// 		memcpy(&dst_buffer->data_buf[offset], data_dst_ptr,
-// 		       BUFFER_SIZE - offset);
-// 		memcpy(&dst_buffer->data_buf[0],
-// 		       data_dst_ptr + BUFFER_SIZE - offset,
-// 		       size - (BUFFER_SIZE - offset));
-// 	}
-// 	mem_barrier();
-// 	dst_buffer->head = (dst_buffer->head + size) % BUFFER_SIZE;
-//     return offset;
-// }
-
 // ASSUMPTION: single producer, single consumer
 static void copy_data_from_buffer(struct fault_buffer *src_buffer,
 				  unsigned long offset, void *data_dst_ptr,
@@ -350,14 +327,6 @@ static void copy_data_from_buffer(struct fault_buffer *src_buffer,
 #endif
     src_buffer->tail = (src_buffer->tail + size) % BUFFER_SIZE;
 }
-
-// static int is_buffer_full(struct fault_buffer *buffer, unsigned long size) {
-//     unsigned long next_head = (buffer->head + size) % BUFFER_SIZE;
-//     // Full condition: next head position is right behind the tail after insertion
-//     if (next_head == buffer->tail) return 1; // Buffer will be full after addition
-//     // Adjusted for circular buffer logic
-//     return 0;
-// }
 
 // ASSUMPTION: single producer, single consumer
 // @return: offset to the buffer, -1 if failed

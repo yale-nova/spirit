@@ -1,11 +1,4 @@
 #/bin/bash
-# echo "Creating partition and formatting...press enters until it finishes"
-
-# sudo parted -s --align optimal /dev/sda mkpart primary ext4 69.0GB 472GB
-# sudo mkfs.ext4 /dev/sda4
-# sudo mkdir -p /mnt/spirit_data
-# sudo mount /dev/sda4 /mnt/spirit_data
-
 export SPIRIT_PATH="/opt/spirit"
 # remove unnecessary kernel files
 cd $SPIRIT_PATH/linux-6.13

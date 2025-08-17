@@ -1,18 +1,14 @@
 - hosts: servers
   vars:
-    # spirit_cache_limit_mb: "{{ spirit_cache_limit_mb }}"
-    # spirit_bw_limit_mbps: "{{ spirit_bw_limit_mbps }}"
     application_config: "{{ application_config }}"
     res_alloc_config: "{{ res_alloc_config }}"
     res_alloc_interval: "{{ res_alloc_interval }}"
     mind_script_dir: "/home/sslee/mind_next/scripts"
     global_enforcer_port: 8000  # since it's inside container; outside the container, it should be 8001
     # = times =
-    # spirit_timeout: "{{ 100 + ((res_alloc_interval | int) * 50) }}" # default: 15 sec x 100 iterations
     spirit_timeout: 1500 # default: 15 sec x 100 iterations
     # retries * delay = should be => timeout
     spirit_retries: 10
-    # spirit_delay: "{{ (res_alloc_interval | int) * 5 + 10}}"
     spirit_delay: 150
     # warmup and margin
     spirit_wampup: 80
@@ -36,24 +32,6 @@
     args:
       chdir: /opt/spirit/spirit-controller
     become: yes
-
-  # - name: Run 2a.remove_swap_only.sh
-  #   ansible.builtin.command:
-  #     cmd: "{{ mind_script_dir }}/2a.remove_swap_only.sh"
-  #   become: yes
-
-  # - name: Wait for removing swap
-  #   pause:
-  #     seconds: 5
-
-  # - name: Run 1a.setup_mind_swap_only.sh
-  #   ansible.builtin.command:
-  #     cmd: "{{ mind_script_dir }}/1a.setup_mind_swap_only.sh"
-  #   become: yes
-
-  # - name: Wait for swap to be activated
-  #   pause:
-  #     seconds: 10
 
   # Clean up the previous run
   - name: Clean up the previous run (remote)
@@ -139,31 +117,6 @@
       timeout: "{{ spirit_wampup }}"
     become: no
 
-  # # Enforce resources
-  # - name: Allocate resources
-  #   ansible.builtin.command:
-  #     cmd: >
-  #       curl -i -X POST -H "Content-Type: application/json"
-  #       -d '{"allocation_map": {"1": [{{spirit_cache_limit_mb | int}}, {{spirit_bw_limit_mbps | int}}]}}'
-  #       http://localhost:{{ global_enforcer_port }}/config
-  #   delegate_to: localhost
-
-  # # Wait for resource allocation
-  # - name: Wait for resource allocation
-  #   ansible.builtin.wait_for:
-  #     timeout: "{{ spirit_wampup }}"
-  #   become: no
-
-  # # Performance measurement
-  # - name: Start performance measurement
-  #   ansible.builtin.command:
-  #     cmd: local-enforcer/scripts/run_with_timeout.sh "{{ spirit_timeout - spirit_wampup}}" local-enforcer/scripts/perf_measurement.sh "{{ global_enforcer_port }}" "{{spirit_cache_limit_mb}}" "{{spirit_bw_limit_mbps}}"
-  #   delegate_to: localhost
-  #   args:
-  #       chdir: /spirit-controller
-  #   async: "{{ spirit_timeout }}"  # Slightly longer than the script's timeout to ensure the script can complete its logic
-  #   poll: 0
-
   # If we wait for this, everything should be done
   - name: Wait for the asynchronous task to complete (global enforcer)
     ansible.builtin.async_status:
@@ -175,7 +128,6 @@
     delegate_to: localhost  # Run on the local machine
     become: yes  # Use elevated privileges if required
 
-  # TODO: check asyncs are done
   # Remove containers
   - name: Get list of all Docker containers, stop and remove those with prefix 'spirit_'
     ansible.builtin.command:

@@ -1,20 +1,15 @@
 - hosts: servers
   vars:
-    # spirit_cache_limit_mb: "{{ spirit_cache_limit_mb }}"
-    # spirit_bw_limit_mbps: "{{ spirit_bw_limit_mbps }}"
-    # application_config: "{{ application_config }}"
     res_alloc_config: "{{ res_alloc_config }}"
     # Required for VM-specific configurations
     local_config_prefix: "{{ local_config_prefix | default('sample_configs/local_config_vm') }}"
     mind_script_dir: "/home/sslee/mind_next/scripts"
     global_enforcer_port: 8000  # since it's inside container; outside the container, it should be 8001
     # = times =
-    # spirit_timeout: 2000  # for dynamic profile
-    spirit_timeout: 3750  # 850
-    # spirit_timeout: 1100 # default: 15 sec x 100 iterations
+    spirit_timeout: 3750
     # retries * delay = should be => timeout
     spirit_retries: 10
-    spirit_delay: 375 # 85
+    spirit_delay: 375
     # warmup and margin
     spirit_wampup: 240
     dynamic_change_delay: 600
@@ -116,20 +111,6 @@
     pause:
       seconds: "{{ local_enforcer_warmup }}"
 
-  # - name: Run the benchmark clients
-  #   shell: |
-  #       pwd
-  #       cd local-enforcer/scripts/
-  #       /opt/spirit/spirit-controller/myenv/bin/python run_clients.py "{{ local_config }}"
-  #   args:
-  #     executable: /bin/bash
-  #     chdir: /opt/spirit/spirit-controller/
-  #   register: client_launch_output
-
-  # - name: Print output
-  #   ansible.builtin.debug:
-  #     var: client_launch_output.stdout_lines
-
   # Pin cpus for the container having "spirit" as prefix
   - name: Pin cpus
     ansible.builtin.command:
@@ -152,7 +133,6 @@
   - name: Run resource allocator
     ansible.builtin.command:
       cmd: local-enforcer/scripts/run_with_timeout.sh "{{ spirit_timeout + spirit_wampup}}" /spirit-controller/local-enforcer/scripts/run_res_alloc.sh "{{ res_alloc_config }}" "450"
-      # cmd: local-enforcer/scripts/run_with_timeout.sh "{{ spirit_timeout + spirit_wampup}}" /spirit-controller/local-enforcer/scripts/run_res_alloc.sh "{{ res_alloc_config }}"
     delegate_to: localhost
     run_once: true
     args:
@@ -222,11 +202,6 @@
     ansible.builtin.wait_for:
       timeout: "{{ dynamic_change_delay }}"
     become: no
-  # # Wait for warmup
-  # - name: Wait for dynamic transition (4/6)
-  #   ansible.builtin.wait_for:
-  #     timeout: "{{ dynamic_change_delay }}"
-  #   become: no
 
   # Send a signal to the container to start the transition
   - name: Send a signal to the container to start the transition
@@ -255,11 +230,6 @@
     ansible.builtin.wait_for:
       timeout: "{{ dynamic_change_delay }}"
     become: no
-  # # Wait for warmup
-  # - name: Wait for dynamic transition (4/6)
-  #   ansible.builtin.wait_for:
-  #     timeout: "{{ dynamic_change_delay }}"
-  #   become: no
 
   # Send a signal to the container to start the transition
   - name: Send a signal to the container to start the transition
@@ -349,34 +319,6 @@
     delay: 5
     ignore_errors: yes
 
-  # # Collect metrics
-  # - name: Collect metrics
-  #   delegate_to: localhost
-  #   run_once: true
-  #   block:
-  #     - name: Collect metrics from each server
-  #       uri:
-  #         url: "http://{{ hostvars[item]['ansible_host'] | default(item) }}:8009/metric"
-  #         method: GET
-  #         return_content: yes
-  #         status_code: 200
-  #       register: metrics_result
-  #       with_items: "{{ groups['servers'] }}"
-  #       loop_control:
-  #         index_var: vm_idx
-  #       ignore_errors: yes
-
-  #     - name: Save metrics to files
-  #       copy:
-  #         content: "{{ item.content | default('Error retrieving metrics') }}"
-  #         dest: "/spirit-controller/res_allocation/logs/spirit_social_net_{{ vm_idx }}_metrics.log"
-  #       loop: "{{ metrics_result.results }}"
-  #       loop_control:
-  #         loop_var: item
-  #         index_var: vm_idx
-  #       become: yes
-  #       when: metrics_result is defined
-
   # Move all logs
   - name : Moves all logs
     # main_move_logs
@@ -387,7 +329,6 @@
     args:
         chdir: /spirit-controller
 
-  # TODO: check asyncs are done
   # Remove containers
   - name: Get list of all Docker containers, stop and remove those with prefix 'spirit_'
     ansible.builtin.command:

@@ -28,24 +28,8 @@ if [ ! -f "$socialnet_script_path/Makefile" ]; then
 fi
 
 # # Goes to the socialnet directory and start service
-# cd "$socialnet_script_path" && make start_service
 cd "$socialnet_script_path" && make restart_jaeger
 sleep 10
-
-
-# # Start preloading docker
-# cd "$socialnet_script_path" && make preload_docker
-
-# # Function to check if the container exists
-# check_container() {
-#   docker ps -q -f name=spirit_socialnet_client
-# }
-
-# # Wait until preload to finish (by checking the existence of spirit_socialnet_client container)
-# while [ -z "$(check_container)" ]; do
-#   echo "$(date) | Waiting for preload to finish"
-#   sleep 60
-# done
 
 # Start the client
 cd "$socialnet_script_path" && make run CONTAINER_NAME="$container_name"

@@ -33,5 +33,4 @@ timestamp=$(date "+%Y%m%d_%H%M%S")
 log_file="/spirit-controller/logs/cdf_c_${cache_limit_mb}_bw_${bw_limit_mbps}_${timestamp}.log"
 
 # Continuously get the status and write it to the log file
-# curl http://10.10.11.204:9901/metric
 curl -X GET "http:///10.10.10.201:${metric_server_port}/metric" >> "${log_file}" || true

@@ -26,10 +26,6 @@ if [ "$(docker ps --all -q -f name='$container_name')" ]; then
   docker rm -f "$container_name"
 fi
 
-# Command to be executed in an infinite loop
-# cmd="./db_bench --benchmarks=fillseq --num=10000000 --write_buffer_size=1073741824 --cache_size=1073741824; while true; do ./db_bench --benchmarks=readseq --use_existing_db=true --num=10000000 --cache_size=1073741824; done"
-# echo "Benchmark cmd: $cmd"
-
 memcached_img="memcached@sha256:768b8b14b264b87cdde0d4bc0e800c332b8563ce19fd15ce98945c4441b98146"
 
 # Run the container and execute the command in one step

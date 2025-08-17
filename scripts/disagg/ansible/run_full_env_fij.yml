@@ -1,20 +1,15 @@
 - hosts: servers
   vars:
-    # spirit_cache_limit_mb: "{{ spirit_cache_limit_mb }}"
-    # spirit_bw_limit_mbps: "{{ spirit_bw_limit_mbps }}"
-    # application_config: "{{ application_config }}"
     res_alloc_config: "{{ res_alloc_config }}"
     # Required for VM-specific configurations
     local_config_prefix: "{{ local_config_prefix | default('sample_configs/local_config_vm') }}"
     mind_script_dir: "/home/sslee/mind_next/scripts"
     global_enforcer_port: 8000  # since it's inside container; outside the container, it should be 8001
     # = times =
-    # spirit_timeout: 2000  # for dynamic profile
-    spirit_timeout: 1700  # 850
-    # spirit_timeout: 1100 # default: 15 sec x 100 iterations
+    spirit_timeout: 1700
     # retries * delay = should be => timeout
     spirit_retries: 10
-    spirit_delay: 170 # 85
+    spirit_delay: 170
     # warmup and margin
     spirit_wampup: 240
     local_enforcer_warmup: 30
@@ -239,7 +234,6 @@
     args:
       chdir: /spirit-controller
 
-  # TODO: check asyncs are done
   # Remove containers
   - name: Get list of all Docker containers, stop and remove those with prefix 'spirit_'
     ansible.builtin.command:

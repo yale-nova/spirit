@@ -21,7 +21,6 @@ def get_latest_subdirectory(directory: str, target_cache_bw: list = None) -> str
         except ValueError:
             pass    # skip
     # Assuming subdirectory names are in the format 'YYYYMMDD-HHMMSS'
-    # latest_subdir = max(subdirs, key=lambda d: datetime.strptime(d.split('_')[-3].split('/')[-1], "%Y%m%d-%H%M%S"))
     latest_subdir = max(date_subdir, key=lambda d: d['date'])['path']
     return latest_subdir
 
