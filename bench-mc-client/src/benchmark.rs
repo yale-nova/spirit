@@ -31,7 +31,6 @@ pub async fn mk_req_map(config: &InitConfig) -> HashMap<String, Arc<RwLock<Vec<D
             db_requests = parse_cachesim_requests(benchmark_path).await;
         } else {
             db_requests = parse_database_requests(benchmark_path).await;
-            // let preload = config.id_preload_map.get(&target_app_id).unwrap();
             // TODO: no scan operation supported now
         }
         new_map.insert(benchmark_path.clone(), Arc::new(RwLock::new(db_requests)));

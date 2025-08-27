@@ -29,10 +29,9 @@ const CACHE_SAMPLE_RATE: u64 = 25; // Sampling rate for computing MRC (default: 
 const CACHE_LINE_SIZE_BYTES: u64 = 64; // Cache line size in bytes
 const PAGE_SIZE_BYTES: u64 = 4096; // Cache line size in bytes
 
-const SAMPLE_DURATION_SECS: f32 = 1.; // Duration for sampling addresses in seconds (default: 0.5)
-const MEASURE_DURATION_SECS: f32 = 5.; // Duration for measuring addresses in seconds (default: 5.)
+const SAMPLE_DURATION_SECS: f32 = 1.; // Duration for sampling addresses in seconds
+const MEASURE_DURATION_SECS: f32 = 5.; // Duration for measuring addresses in seconds
 const LEN_PERF_HISTORY: usize = 100; // Length of the perf history
-const PAGES_IN_GB: u64 = 1024 * 1024 * 1024 / PAGE_SIZE_BYTES; // Number of pages in 1 GB
 
 const SEPRATE_COMPULSORY: bool = false; // Separate compulsory and capacity misses
 const EVICTION_PRESSURE_RATIO: f64 = 0.9; // Eviction pressure starts at this ratio of cache size
@@ -753,8 +752,6 @@ impl CacheClient {
         locked_stat.prev_read_bytes = read_bytes;
         locked_stat.prev_write_bytes = write_bytes;
         locked_stat.prev_time = current_time;
-        // (read_mbps + write_mbps) as BandwidthMbps    // Fetching + evicting rate
-        // read_mbps as BandwidthMbps // Fetching rate
         read_mbps.max(write_mbps) as BandwidthMbps
     }
 
@@ -1110,7 +1107,6 @@ impl CacheClient {
         let pages_accessed = pages_detected as f64 * CACHE_SAMPLE_RATE as f64;
         let pages_per_sec = pages_accessed / SAMPLE_DURATION_SECS as f64;
         let pages_fetched = avg_bio_mbps as f64 * 1024. * 1024. / 8. / PAGE_SIZE_BYTES as f64;
-        // let miss_ratio_from_sampled = avg_bio_mbps as f64 / (pages_per_sec * PAGE_SIZE_BYTES as f64 * 8.);
         let miss_ratio_from_sampled = pages_fetched / pages_per_sec;
         println!("{} | Avg:: bio mbps: {}, cache mbps: {} | {} pages fetched, {} pages detected (anon: {}), missed page ratio: {} | Target MissRatio: {} / {} | Accessed: u: {}",
                  chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
@@ -1135,6 +1131,7 @@ impl CacheClient {
             avg_faults_per_sec, avg_faults_ratio,   // #faults / #l3miss
             pages_fetched/avg_faults_per_sec.max(1.0)
         );
+
         // memory_accesses is page-aligned but each sample still represents cache miss
         let cache_access = cache_access_bytes / CACHE_LINE_SIZE_BYTES as f64;
         let miss_ratio = avg_faults_ratio.min(pages_fetched / cache_access).min(1.0) / OS_PREFETCH_FACTOR;
@@ -1268,8 +1265,6 @@ impl CacheClient {
         pages_until_anon: f64,
         _sample_rate: f64,
     ) -> f64 {
-        // let n_pages_in_gb = PAGES_IN_GB as f64;
-        // let n_pages_in_gb = 1.;
         let max_iter: usize = 2500;
         let tol: f64 = 1e-6;
         let epsilon: f64 = 1e-1;
@@ -1278,7 +1273,6 @@ impl CacheClient {
         // Precompute constants
         let term = beta * n_pages_in_gb / (1.0 - exponent);
         let anon_u = 1.0 + pages_until_anon / n_pages_in_gb;
-        // let anon_u = pages_until_anon / n_pages_in_gb;
         let anon_accesses = term * anon_u.powf(1.0 - exponent) + gamma * pages_until_anon;
 
         // Initial guess for mid
@@ -1286,7 +1280,6 @@ impl CacheClient {
 
         for _ in 0..max_iter {
             let u_mid = 1.0 + mid / n_pages_in_gb;
-            // let u_mid = mid / n_pages_in_gb;
             let mid_accesses = term * u_mid.powf(1.0 - exponent) + gamma * mid;
 
             // Derivatives of mid_accesses
@@ -1346,26 +1339,21 @@ impl CacheClient {
         let (beta, gamma, pages_in_gb) = coeff;
         if (exponent - 1.0).abs() < tolerance {
             let term = (pages / pages_in_gb as f64).ln_1p();
-            // let term = (pages / pages_in_gb as f64).ln();
             if hit_only {
                 let compulsory_miss_point = Self::compute_compulsory_miss_point(
                     exponent, coeff, pages_detected, pages_until_cache, pages_until_anon, sample_rate);
                 if pages <= compulsory_miss_point {
-                    // access_sampled + (sample_rate * PAGES_IN_GB as f64 * term).max(0.)
                     (beta * pages_in_gb as f64 * term).max(0.) + gamma * pages
                 } else {
                     // now hit does not account any pages beyond compulsory_miss_point
                     let term: f64 = (compulsory_miss_point / pages_in_gb as f64).ln_1p();
-                    // access_sampled + (sample_rate * PAGES_IN_GB as f64 * term - compulsory_miss_point).max(0.)
                     (beta * pages_in_gb as f64 * term - compulsory_miss_point).max(0.) + gamma * compulsory_miss_point
                 }
             } else {
-                // access_sampled + sample_rate * PAGES_IN_GB as f64 * term
                 beta * pages_in_gb as f64 * term + gamma * pages
             }
         } else {
             let term = (1.0 + pages / pages_in_gb as f64).powf(1.0 - exponent) - 1.0;
-            // let term = (pages / pages_in_gb as f64).powf(1.0 - exponent);
             if hit_only {
                 let compulsory_miss_point = Self::compute_compulsory_miss_point(
                     exponent, coeff, pages_detected, pages_until_cache, pages_until_anon, sample_rate);
@@ -1541,7 +1529,6 @@ impl CacheClient {
                 return None;
             }
         }
-        // DEBUG:: Print the current MRC
         // Define cache sizes in MB and compute corresponding cache lines
         let cache_sizes_mb: Vec<u64> = (CACHE_GRANULARITY_MB..=MAX_CACHE_IN_MB)
         .step_by(CACHE_GRANULARITY_MB as usize)
@@ -1745,7 +1732,6 @@ impl CacheClient {
                 access_sampled, tolerance, false);
             let computed_hit_rate_dx = (accesses_est_dx / accesses_tot_dx).max(tolerance).min(1.0 - tolerance);
 
-            // let mut difference_dx = (computed_hit_rate_dx - target_hit_rate).powi(2);
             let difference_dx = (((1. - computed_hit_rate_dx) - (1. - target_hit_rate))/(1. - target_hit_rate)).powi(2);
             let derivative_coeff = (difference_dx - difference).min(clip_hit_rate).max(-clip_hit_rate) / dx;
 

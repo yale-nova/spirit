@@ -11,12 +11,11 @@ const REPORT_REQUEST_NUM: usize = 10_000_000;
 const MAX_REQUEST_NUM: usize = REPORT_REQUEST_NUM * 10; // 100 million in total (ref. Memshare microbench setup)
 const MAX_IDLE_TIME: u64 = 10;   // 10 second
 const MAX_REPEATED_REQ: u64 = 1;   // 3 times
-pub const TRACE_REPLAY_DUPLICATION_RATIO: u64 = 1;  // 1 for YCSB; 100 for Meta, original traffic ratio was 1/100 so make it back to 1
+pub const TRACE_REPLAY_DUPLICATION_RATIO: u64 = 1;
 pub const TRACE_REPLAY_TIMING_RATIO: u64 = 100;  // original traffic ratio was 1/100 so make it back to 1
 
 // 500 MB; Redis limit is 512 MiB for all string values
 // Ref: https://stackoverflow.com/a/5624569
-// Due to the Redis crate's memory management, we limit the value size to 64 MiB
 pub const MAX_VALUE_SIZE: usize = 512 * 1024 * 1024;
 pub const MAX_TOTAL_VALUE_SIZE: usize = 200 * 1024 * 1024 * 1024;   // we can support 200 GB x 2 or 100 GB x 4 large value working sets
 pub const VALUE_SIZE_SCALE: usize = 1;  // 1x or higher scale to enlarge the value size
