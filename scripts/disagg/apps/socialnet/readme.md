@@ -21,7 +21,7 @@ cat /sys/fs/cgroup/spirit.slice/spirit-snet.slice/memory.swap.max
 ```make
 SOCIAL_NETWORK_DIR=/home/sslee/DeathStarBench/socialNetwork
 ```
-The source code can be cloned from https://github.com/shsym/DeathStarBench.git
+The source code can be cloned from https://github.com/shsym/DeathStarBench.git (`dev/social-init-opt` branch)
 
 - Build a container
 ```bash
