@@ -79,8 +79,7 @@ class SpiritAllocator(ResourceAllocator):
             if len(users) >= 1:
                 static_alloc = False
 
-            # for user in users:
-            for user in [1]:
+            for user in users:
                 if (
                     user not in self.monitor.collected_data
                     or self.monitor.collected_data[user]["total_record"]

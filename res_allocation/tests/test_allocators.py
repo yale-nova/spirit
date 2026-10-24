@@ -112,5 +112,26 @@ class TestStartupSplit(AllocatorTestCase):
                 self.assert_within_capacity(allocation, num_apps, num_vms)
 
 
+class TestSpiritWarmup(AllocatorTestCase):
+    def run_epochs(self, app_ids, records, epochs=5):
+        allocator, monitor = make_spirit(app_ids, {0: list(app_ids)})
+        static = allocator.allocate_and_parse()  # no data yet
+        monitor.set_records(records)
+        return static, [allocator.allocate_and_parse() for _ in range(epochs)]
+
+    def test_leaves_static_split_once_every_app_has_data(self):
+        for app_ids in ([1, 2], [2, 3]):
+            with self.subTest(app_ids=app_ids):
+                static, epochs = self.run_epochs(app_ids, dict.fromkeys(app_ids, 50))
+                self.assertNotEqual(epochs[-1], static)
+
+    def test_stays_static_until_every_app_has_data(self):
+        for app_ids in ([1, 2], [2, 3]):
+            with self.subTest(app_ids=app_ids):
+                records = {app_ids[0]: 50, app_ids[1]: 0}
+                static, epochs = self.run_epochs(app_ids, records)
+                self.assertTrue(all(alloc == static for alloc in epochs))
+
+
 if __name__ == "__main__":
     unittest.main()
