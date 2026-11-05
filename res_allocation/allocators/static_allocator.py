@@ -48,8 +48,8 @@ class StaticAllocator(ResourceAllocator):
             users_per_vm = max(1, len(users) // num_vms)
             for idx, user in enumerate(users):
                 allocation[user] = {}
-                vm_idx = idx // users_per_vm
-                users_in_this_vm = users_per_vm if vm_idx < num_vms else len(users) - vm_idx * users_per_vm
+                vm_idx = min(idx // users_per_vm, num_vms - 1)
+                users_in_this_vm = users_per_vm if vm_idx < num_vms - 1 else len(users) - vm_idx * users_per_vm
                 for key in extract_keys:
                     allocation[user][key] = self.resource_scale[key] / float(users_in_this_vm)
                     if key == "mem_bw":

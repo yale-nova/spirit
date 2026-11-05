@@ -79,8 +79,7 @@ class SpiritAllocator(ResourceAllocator):
             if len(users) >= 1:
                 static_alloc = False
 
-            # for user in users:
-            for user in [1]:
+            for user in users:
                 if (
                     user not in self.monitor.collected_data
                     or self.monitor.collected_data[user]["total_record"]
@@ -101,8 +100,8 @@ class SpiritAllocator(ResourceAllocator):
                 # No VM mapping - use flat allocation
                 self.logger.log_msg(f"VM to app mapping not available. Using flat allocation across all apps. Number of VMs: {num_vms}")
                 for idx, user in enumerate(users):
-                    vm_idx = idx // users_per_vm
-                    users_in_this_vm = users_per_vm if vm_idx < num_vms else len(users) - vm_idx * users_per_vm
+                    vm_idx = min(idx // users_per_vm, num_vms - 1)
+                    users_in_this_vm = users_per_vm if vm_idx < num_vms - 1 else len(users) - vm_idx * users_per_vm
                     allocation[user] = {}
                     self.last_allocation[user] = {}
                     for key in extract_keys:
