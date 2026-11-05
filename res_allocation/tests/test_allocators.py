@@ -63,6 +63,18 @@ def make_spirit(app_ids, vm_to_app_map, num_vms=1):
     return allocator, monitor
 
 
+def make_static(app_ids, num_vms):
+    allocator = StaticAllocator(
+        "unused.json",
+        resource_scale={"cache": 1000.0, "mem_bw": 10.0},
+        estimator=FakeEstimator(dict.fromkeys(app_ids), num_vms),
+        monitor=FakeMonitor({}),
+        deployer=object(),
+    )
+    allocator.initialize(StaticAllocatorParams(30.0))
+    return allocator
+
+
 class AllocatorTestCase(unittest.TestCase):
     def setUp(self):
         # The allocators log to ./logs and clear old logs there.
@@ -76,61 +88,46 @@ class AllocatorTestCase(unittest.TestCase):
 class TestStartupSplit(AllocatorTestCase):
     # Until the monitor knows which VM hosts which app, the apps are split into
     # contiguous blocks, one per VM. No block may get more than one VM holds.
+    ALLOCATORS = {
+        "spirit": lambda app_ids, num_vms: make_spirit(app_ids, {}, num_vms)[0],
+        "static": make_static,
+    }
     CASES = ((5, 2), (7, 3), (25, 4), (24, 4), (3, 4))
 
-    def assert_within_capacity(self, allocation, num_apps, num_vms):
-        self.assertEqual(len(allocation), num_apps)
-        self.assertLessEqual(
-            sum(alloc["cache"] for alloc in allocation.values()), num_vms * 1000
-        )
-        self.assertLessEqual(
-            sum(alloc["mem_bw"] for alloc in allocation.values()),
-            num_vms * 10 * 1024,
-        )
-
-    def test_spirit(self):
-        for num_apps, num_vms in self.CASES:
-            with self.subTest(num_apps=num_apps, num_vms=num_vms):
-                app_ids = list(range(1, num_apps + 1))
-                allocator, _ = make_spirit(app_ids, {}, num_vms)
-                allocation = allocator.allocate_and_parse()
-                self.assert_within_capacity(allocation, num_apps, num_vms)
-
-    def test_static(self):
-        for num_apps, num_vms in self.CASES:
-            with self.subTest(num_apps=num_apps, num_vms=num_vms):
-                app_ids = list(range(1, num_apps + 1))
-                allocator = StaticAllocator(
-                    "unused.json",
-                    resource_scale={"cache": 1000.0, "mem_bw": 10.0},
-                    estimator=FakeEstimator(dict.fromkeys(app_ids), num_vms),
-                    monitor=FakeMonitor({}),
-                    deployer=object(),
-                )
-                allocator.initialize(StaticAllocatorParams(30.0))
-                allocation = allocator.allocate_and_parse()
-                self.assert_within_capacity(allocation, num_apps, num_vms)
+    def test_allocation_fits_the_cluster(self):
+        for kind, make_allocator in self.ALLOCATORS.items():
+            for num_apps, num_vms in self.CASES:
+                with self.subTest(allocator=kind, num_apps=num_apps, num_vms=num_vms):
+                    app_ids = list(range(1, num_apps + 1))
+                    allocation = make_allocator(app_ids, num_vms).allocate_and_parse()
+                    self.assertEqual(len(allocation), num_apps)
+                    self.assertLessEqual(
+                        sum(alloc["cache"] for alloc in allocation.values()),
+                        num_vms * 1000,
+                    )
+                    self.assertLessEqual(
+                        sum(alloc["mem_bw"] for alloc in allocation.values()),
+                        num_vms * 10 * 1024,
+                    )
 
 
 class TestSpiritWarmup(AllocatorTestCase):
-    def run_epochs(self, app_ids, records, epochs=5):
-        allocator, monitor = make_spirit(app_ids, {0: list(app_ids)})
-        static = allocator.allocate_and_parse()  # no data yet
-        monitor.set_records(records)
-        return static, [allocator.allocate_and_parse() for _ in range(epochs)]
+    # Spirit leaves the static split only once every app has monitor data.
+    CASES = (
+        ([1, 2], {1: 50, 2: 50}, True),
+        ([2, 3], {2: 50, 3: 50}, True),
+        ([1, 2], {1: 50, 2: 0}, False),
+        ([2, 3], {2: 50, 3: 0}, False),
+    )
 
-    def test_leaves_static_split_once_every_app_has_data(self):
-        for app_ids in ([1, 2], [2, 3]):
-            with self.subTest(app_ids=app_ids):
-                static, epochs = self.run_epochs(app_ids, dict.fromkeys(app_ids, 50))
-                self.assertNotEqual(epochs[-1], static)
-
-    def test_stays_static_until_every_app_has_data(self):
-        for app_ids in ([1, 2], [2, 3]):
-            with self.subTest(app_ids=app_ids):
-                records = {app_ids[0]: 50, app_ids[1]: 0}
-                static, epochs = self.run_epochs(app_ids, records)
-                self.assertTrue(all(alloc == static for alloc in epochs))
+    def test_goes_dynamic_once_every_app_has_data(self):
+        for app_ids, records, goes_dynamic in self.CASES:
+            with self.subTest(app_ids=app_ids, records=records):
+                allocator, monitor = make_spirit(app_ids, {0: list(app_ids)})
+                static = allocator.allocate_and_parse()  # no data yet
+                monitor.set_records(records)
+                epochs = [allocator.allocate_and_parse() for _ in range(5)]
+                self.assertEqual(any(a != static for a in epochs), goes_dynamic)
 
 
 if __name__ == "__main__":
